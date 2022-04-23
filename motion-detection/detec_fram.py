@@ -2,7 +2,6 @@
 import argparse
 import itertools
 import sys
-import threading
 import time
 import numpy as np
 import cv2
@@ -76,10 +75,6 @@ def main(args):
                 print("Moving object detected")
                 flag = True
                 publish_status(client, args.topic, "Moving")
-                # if (over):
-                #     print("Start the video")
-                #     num += 1
-                #     threading.Thread(target=storeVideo, args=(num,)).start()
             else:
                 count = count + 1
         else:
@@ -94,18 +89,16 @@ def main(args):
             cv2.imshow("frame", frame)
             cv2.imshow("thresh", thresh)
             cv2.imshow("threst2", thresh2)
-        # if cv2.waitKey(200) & 0xFF == ord('q'):
-        #     break
         now = time.time()
         frame_time = now - frame_start_time
         fps = 1.0 / frame_time
         frame_start_time = now
     camera.release()
-    # cv2.destroyAllWindows()
 
 
 def publish_status(client: mqtt.Client, topic: str, state: str):
     client.publish(topic, state)
+
 
 def storeVideo(num):
     global image
