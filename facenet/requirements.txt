@@ -1,7 +1,0 @@
-pillow
-six
-numpy==1.17.0
-scipy==1.0.0
-tensorflow==1.7
-paho_mqtt
-sklearn

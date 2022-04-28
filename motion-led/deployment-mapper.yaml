@@ -1,0 +1,65 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: led-light-mapper-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: led-light-mapper
+  template:
+    metadata:
+      labels:
+        app: led-light-mapper
+    spec:
+      nodeSelector:
+        type: led
+      hostNetwork: true
+      containers:
+      - name: led-light-mapper-container
+        image: 192.168.43.145:5000/led-light-mapper:v1.2
+        imagePullPolicy: Always
+        securityContext:
+          privileged: true
+        volumeMounts:
+        - name: config-volume
+          mountPath: /opt/kubeedge/
+        - name: gpiomem
+          mountPath: /dev/gpiomem
+        - name: mem
+          mountPath: /dev/mem
+      volumes:
+      - name: gpiomem
+        hostPath:
+          path: /dev/gpiomem
+      - name: mem
+        hostPath:
+          path: /dev/mem
+      - name: config-volume
+        configMap:
+          name: device-profile-config-pi-led
+      restartPolicy: Always
+---
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: Role
+metadata:
+  name: led-light
+  namespace: default
+rules:
+- apiGroups: ["devices.kubeedge.io"]
+  resources: ["devices"]
+  verbs: ["get", "patch"]
+
+---
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: RoleBinding
+metadata:
+  name: led-light-rbac
+  namespace: default
+subjects:
+  - kind: ServiceAccount
+    name: default
+roleRef:
+  kind: Role
+  name: led-light
+  apiGroup: rbac.authorization.k8s.io

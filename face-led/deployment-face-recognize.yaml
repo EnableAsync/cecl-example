@@ -1,0 +1,42 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: face-recognize
+  name: face-recognize
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: face-recognize
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: face-recognize
+    spec:
+      nodeSelector:
+        type: led
+      hostNetwork: true
+      containers:
+      - name: face-recognize
+        image: 192.168.43.145:5000/face-recognize:v1.0
+        imagePullPolicy: IfNotPresent
+        securityContext:
+          privileged: true
+        command: ["python3","-u","/facenet/face_recognize.py", "--broker=127.0.0.1"]
+        volumeMounts:
+          - name: people
+            mountPath: /facenet/people
+          - name: model
+            mountPath: /facenet/model/facenet
+      restartPolicy: Always
+      volumes:
+        - name: people
+          hostPath:
+            path: /people
+        - name: model
+          hostPath:
+            path: /model/facenet
+status: {}

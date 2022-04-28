@@ -1,2 +1,0 @@
-mqtt-url: tcp://127.0.0.1:1883
-device-name: led-light-instance-01
