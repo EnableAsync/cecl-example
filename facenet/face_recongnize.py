@@ -165,7 +165,7 @@ def main(args, model_dir):
                             thickness=2,
                             lineType=2)
                 else:
-                    queue.put("unknown")
+                    queue.put("nothing")
 
                 cv2.putText(img, "Face Recognizer", (20, 40), font,
                             1, (255, 255, 255), 1, cv2.LINE_AA)
@@ -205,10 +205,11 @@ client.connect(broker)
 
 def publicInfo(stream):
     while stream.isOpened():
-        for i in range(5):
-            queue.get()
-        if(queue.get() == 'unknown'):
+        state = queue.get()
+        if state == "unknown":
             state = "OFF"
+        elif state == "nothing":
+            state = "NOTHING"
         else:
             state = "ON"
         client.publish('faceRecon', state)
