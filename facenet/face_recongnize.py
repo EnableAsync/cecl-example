@@ -212,7 +212,6 @@ def publicInfo(stream):
         else:
             state = "ON"
         client.publish('faceRecon', state)
-        time.sleep(1)
 
 
 if __name__ == '__main__':
