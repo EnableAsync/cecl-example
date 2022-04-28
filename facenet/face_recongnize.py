@@ -81,6 +81,8 @@ def main(args, model_dir):
             compare_emb = []
             compare_list = []
             for i in os.listdir(dir):
+                if i==".gitignore":
+                    continue
                 compare_list.append(i.split(".")[0])
                 compare_emb.append(np.load(dir+i))
             compare_emb = np.array(compare_emb)
@@ -162,6 +164,8 @@ def main(args, model_dir):
                             (0, 0, 255),
                             thickness=2,
                             lineType=2)
+                else:
+                    queue.put("unknown")
 
                 cv2.putText(img, "Face Recognizer", (20, 40), font,
                             1, (255, 255, 255), 1, cv2.LINE_AA)
