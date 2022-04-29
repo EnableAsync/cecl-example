@@ -22,4 +22,8 @@ status:
         metadata:
           type: string
         value: 'OFF'
+      reported:
+        metadata:
+          type: string
+        value: 'OFF'
 

@@ -39,6 +39,8 @@ var deviceTwinResult DeviceTwinUpdate
 var deviceID string
 var pinNumber float64
 var configFile configuration.ReadConfigFile
+var actual TwinValue
+var actualValue string = "unknown"
 
 //Token interface to validate the MQTT connection.
 type Token interface {
@@ -104,6 +106,9 @@ func usage() {
 
 //init for getting command line arguments for glog and initiating the MQTT connection
 func init() {
+	// initialize actual value
+	actual.Value = &actualValue
+
 	flag.Usage = usage
 	// NOTE: This next line is key you have to call flag.Parse() for the command line
 	// options or "flags" that are defined in the glog module to be picked up.
@@ -200,6 +205,8 @@ func OnSubMessageReceived(client MQTT.Client, message MQTT.Message) {
 	if err != nil {
 		glog.Error("Error in unmarshalling:  ", err)
 	}
+	deviceTwinResult.Twin[powerStatus].Actual = &actual
+	glog.Infof("update deviceTwinResult: %+v", deviceTwinResult)
 }
 
 //createActualUpdateMessage function is used to create the device twin update message
@@ -241,14 +248,14 @@ func subscribe() {
 
 func OnCameraReceived(client MQTT.Client, message MQTT.Message) {
 	glog.Error(string(message.Payload()))
-	if "Moving" == string(message.Payload()) {
+	if "ON" == string(message.Payload()) {
 		lightdriver.TurnON(int64(pinNumber))
-		*deviceTwinResult.Twin[powerStatus].Actual.Value = "ON"
+		actualValue = "ON"
 	} else {
 		lightdriver.TurnOff(int64(pinNumber))
-		*deviceTwinResult.Twin[powerStatus].Actual.Value = "OFF"
+		actualValue = "OFF"
 	}
-	updateMessage := createActualUpdateMessage(*deviceTwinResult.Twin[powerStatus].Actual.Value)
+	updateMessage := createActualUpdateMessage(actualValue)
 	changeTwinValue(updateMessage)
 }
 
@@ -274,32 +281,32 @@ func equateTwinValue(updateMessage DeviceTwinUpdate) {
 	go subscribeCamera()
 	getTwin(updateMessage)
 	wg.Wait()
-	if deviceTwinResult.Twin[powerStatus].Expected != nil && ((deviceTwinResult.Twin[powerStatus].Actual == nil) && deviceTwinResult.Twin[powerStatus].Expected != nil || (*deviceTwinResult.Twin[powerStatus].Expected.Value != *deviceTwinResult.Twin[powerStatus].Actual.Value)) {
+	if deviceTwinResult.Twin[powerStatus].Expected != nil && ((deviceTwinResult.Twin[powerStatus].Actual == nil) && deviceTwinResult.Twin[powerStatus].Expected != nil || (*deviceTwinResult.Twin[powerStatus].Expected.Value != actualValue)) {
 		glog.Info("Expected Value : ", *deviceTwinResult.Twin[powerStatus].Expected.Value)
 		if deviceTwinResult.Twin[powerStatus].Actual == nil {
 			glog.Info("Actual Value: ", deviceTwinResult.Twin[powerStatus].Actual)
 		} else {
 			glog.Info("Actual Value: ", *deviceTwinResult.Twin[powerStatus].Actual.Value)
 		}
-		glog.Info("Equating the actual  value to expected value")
+		glog.Info("Equating the actual value to expected value")
 		switch strings.ToUpper(*deviceTwinResult.Twin[powerStatus].Expected.Value) {
 		case "ON":
 			glog.Info("Turning ON the light")
 			//Turn On the light by supplying power on the pin specified
 			lightdriver.TurnON(int64(pinNumber))
-
+			actualValue = "ON"
 		case "OFF":
 			glog.Info("Turning OFF the light")
 			//Turn Off the light by cutting off power on the pin specified
 			lightdriver.TurnOff(int64(pinNumber))
+			actualValue = "OFF"
 		case "NOTHING":
-			glog.Info("Turning OFF the light")
 			glog.Info("Nothing")
 			break
 		default:
 			panic("OOPS!!!!! Attempt to perform invalid operation " + *deviceTwinResult.Twin[powerStatus].Expected.Value + " on LED light")
 		}
-		updateMessage = createActualUpdateMessage(*deviceTwinResult.Twin[powerStatus].Actual.Value)
+		updateMessage = createActualUpdateMessage(actualValue)
 		changeTwinValue(updateMessage)
 	} else {
 		glog.Info("Actual values are in sync with Expected value")
@@ -308,7 +315,7 @@ func equateTwinValue(updateMessage DeviceTwinUpdate) {
 
 func main() {
 	changeDeviceState("online")
-	updateMessage := createActualUpdateMessage("unknown")
+	updateMessage := createActualUpdateMessage(actualValue)
 	for {
 		equateTwinValue(updateMessage)
 	}
